@@ -49,3 +49,15 @@
 
 - Users should describe business requirements in natural language.
 - Do not require internal file paths or implementation details unless necessary.
+
+## Bytai Branch Policy
+
+- `stagingブランチ` is the normal development branch and the repository default branch.
+- `mainブランチ` is the production branch.
+- Normal development work must target `stagingブランチ`.
+- Do not push normal development changes directly to `mainブランチ`.
+- Do not merge `stagingブランチ` into `mainブランチ` unless the user explicitly instructs a production promotion.
+- A push to `stagingブランチ` may automatically verify and deploy the Cloudflare staging environment.
+- Production deployment is allowed only after a pull request from `stagingブランチ` to `mainブランチ` is merged.
+- Treat a merged `stagingブランチ` -> `mainブランチ` pull request as an explicit production promotion event.
+

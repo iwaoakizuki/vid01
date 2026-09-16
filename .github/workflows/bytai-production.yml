@@ -1,0 +1,59 @@
+name: Bytai - Deploy Production
+
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - closed
+
+permissions:
+  contents: read
+
+concurrency:
+  group: bytai-production
+  cancel-in-progress: false
+
+jobs:
+  verify-and-deploy:
+    if: >
+      github.event.pull_request.merged == true &&
+      github.event.pull_request.head.ref == 'staging'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout main branch
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install dependencies
+        shell: bash
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci
+          else
+            npm install
+          fi
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Build
+        run: npm run build
+
+      - name: Deploy Cloudflare production
+        if: ${{ vars.BYTAI_CF_ENABLED == 'true' }}
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npm run deploy:prod
+
+      - name: Cloudflare deployment is not enabled yet
+        if: ${{ vars.BYTAI_CF_ENABLED != 'true' }}
+        run: echo "Production verification passed. Cloudflare deployment is disabled until BYTAI_CF_ENABLED=true."
