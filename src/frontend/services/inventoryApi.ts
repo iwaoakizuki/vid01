@@ -18,6 +18,10 @@ export const inventoryApi = {
   getTransactions: () => request<{ transactions: InventoryTransaction[] }>(
     "/api/transactions?limit=20",
   ),
+  updateStock: (productId: number) => request<{ product: ProductStock }>(
+    `/api/products/${productId}/stock-update`,
+    { method: "POST" },
+  ),
   createTransaction: (data: {
     productId: number;
     transactionType: TransactionType;
@@ -30,4 +34,3 @@ export const inventoryApi = {
     body: JSON.stringify(data),
   }),
 };
-
