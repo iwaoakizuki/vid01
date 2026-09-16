@@ -61,3 +61,7 @@
 - Production deployment is allowed only after a pull request from `stagingブランチ` to `mainブランチ` is merged.
 - Treat a merged `stagingブランチ` -> `mainブランチ` pull request as an explicit production promotion event.
 
+## Bytai skills
+
+- Git/GitHub操作、通常開発のbranch選択、commit、push、Pull Request、本番昇格を行う場合は、`.agents/skills/bytai-github-workflow/SKILL.md` を使用する。
+

@@ -16,3 +16,5 @@ Thumbs.db
 *.log
 
 bytai-github-setup-*.mjs
+
+bytai-cloudflare-setup-v1.mjs
