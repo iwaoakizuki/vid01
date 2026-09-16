@@ -52,14 +52,18 @@
 
 ## Bytai Branch Policy
 
-- `stagingブランチ` is the normal development branch and the repository default branch.
+- `stagingブランチ` is the normal development and DEV deployment branch.
 - `mainブランチ` is the production branch.
-- Normal development work must target `stagingブランチ`.
-- Do not push normal development changes directly to `mainブランチ`.
+- Normal development must start from `stagingブランチ`.
+- Codex should make normal development changes on a temporary work branch, not directly on `stagingブランチ` or `mainブランチ`.
+- After implementation and local checks, Codex should create a Pull Request whose base branch is `stagingブランチ`.
+- Codex-created Pull Requests to `stagingブランチ` are automatically validated by GitHub Actions.
+- When the validation succeeds, the Codex Pull Request may be automatically merged into `stagingブランチ`.
+- When validation fails, the Pull Request must remain unmerged and the failure must be reported.
+- After an automatic merge into `stagingブランチ`, GitHub Actions starts the staging deployment workflow.
 - Do not merge `stagingブランチ` into `mainブランチ` unless the user explicitly instructs a production promotion.
-- A push to `stagingブランチ` may automatically verify and deploy the Cloudflare staging environment.
-- Production deployment is allowed only after a pull request from `stagingブランチ` to `mainブランチ` is merged.
-- Treat a merged `stagingブランチ` -> `mainブランチ` pull request as an explicit production promotion event.
+- Production deployment is allowed only after a Pull Request from `stagingブランチ` to `mainブランチ` is merged.
+- Treat a merged `stagingブランチ` -> `mainブランチ` Pull Request as an explicit production promotion event.
 
 ## Bytai skills
 
