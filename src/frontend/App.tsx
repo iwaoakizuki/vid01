@@ -13,7 +13,7 @@ export default function App() {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [updatingProductId, setUpdatingProductId] = useState<number | null>(null);
+  const [updatingStock, setUpdatingStock] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [form, setForm] = useState({
@@ -73,18 +73,18 @@ export default function App() {
     }
   }
 
-  async function handleStockUpdate(product: ProductStock) {
+  async function handleStockUpdate() {
     setError("");
     setSuccess("");
-    setUpdatingProductId(product.id);
+    setUpdatingStock(true);
     try {
-      await inventoryApi.updateStock(product.id);
-      setSuccess(`${product.name}の現在庫（${numberFormat.format(product.currentStock)}）を基準在庫として更新しました。`);
+      const result = await inventoryApi.updateStock();
+      setSuccess(`${numberFormat.format(result.updatedCount)}商品の現在庫を基準在庫として更新しました。`);
       await loadData();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "在庫の更新に失敗しました。");
     } finally {
-      setUpdatingProductId(null);
+      setUpdatingStock(false);
     }
   }
 
@@ -133,25 +133,27 @@ export default function App() {
             <label className="search"><span>⌕</span><input type="search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="商品コード・商品名で検索" /></label>
           </div>
           <div className="table-wrap"><table>
-            <thead><tr><th>商品コード</th><th>商品名</th><th>最終更新日</th><th className="numeric">基準在庫</th><th className="numeric inbound-text">入庫累計</th><th className="numeric outbound-text">出庫累計</th><th className="numeric current-heading">現在庫</th><th><span className="visually-hidden">操作</span></th></tr></thead>
+            <thead><tr><th>商品コード</th><th>商品名</th><th>最終更新日</th><th className="numeric">基準在庫</th><th className="numeric inbound-text">入庫累計</th><th className="numeric outbound-text">出庫累計</th><th className="numeric current-heading">現在庫</th></tr></thead>
             <tbody>
-              {!loading && products.length === 0 && <tr><td className="empty" colSpan={8}>該当する商品はありません。</td></tr>}
+              {!loading && products.length === 0 && <tr><td className="empty" colSpan={7}>該当する商品はありません。</td></tr>}
               {products.map((product) => <tr key={product.id}>
                 <td><span className="sku">{product.sku}</span></td><td className="product-name">{product.name}</td><td>{product.stockUpdatedAt.slice(0, 10)}</td>
                 <td className="numeric">{numberFormat.format(product.baseStockQuantity)}</td><td className="numeric inbound-text">+{numberFormat.format(product.inboundTotal)}</td><td className="numeric outbound-text">−{numberFormat.format(product.outboundTotal)}</td>
                 <td className="numeric"><strong className={product.currentStock <= 5 ? "stock-value low" : "stock-value"}>{numberFormat.format(product.currentStock)}</strong></td>
-                <td className="stock-action"><button type="button" className="stock-update-button" disabled={updatingProductId !== null} onClick={() => void handleStockUpdate(product)}>{updatingProductId === product.id ? "更新中…" : "在庫更新"}</button></td>
               </tr>)}
             </tbody>
           </table></div>
-          <p className="formula">現在庫 ＝ 基準在庫 ＋ 最終更新日より後の入庫 − 出庫</p>
+          <div className="stock-footer">
+            <p className="formula">現在庫 ＝ 基準在庫 ＋ 最終更新日より後の入庫 − 出庫</p>
+            <button type="button" className="stock-update-button" disabled={loading || updatingStock} onClick={() => void handleStockUpdate()}>{updatingStock ? "更新中…" : "在庫更新"}</button>
+          </div>
         </section>
 
         <section className="panel history-panel">
           <div className="section-heading"><div><span className="eyebrow">RECENT ACTIVITY</span><h2>最近の入出庫履歴</h2></div><span className="count">直近 {transactions.length} 件</span></div>
           <div className="table-wrap"><table>
             <thead><tr><th>日時</th><th>商品</th><th>区分</th><th className="numeric">数量</th><th>備考</th></tr></thead>
-            <tbody>{transactions.map((transaction) => <tr key={transaction.id}>
+            <tbody>{transactions.map((transaction) => <tr key={transaction.id} className={transaction.isApplied ? "applied" : undefined}>
               <td>{transaction.transactionDate}</td><td><span className="history-product">{transaction.productName}</span><small>{transaction.sku}</small></td>
               <td><span className={`badge ${transaction.transactionType}`}>{transaction.transactionType === "inbound" ? "入庫" : "出庫"}</span></td>
               <td className="numeric quantity">{numberFormat.format(transaction.quantity)}</td><td className="note">{transaction.note || "—"}</td>
