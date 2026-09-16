@@ -13,6 +13,7 @@ export default function App() {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [updatingProductId, setUpdatingProductId] = useState<number | null>(null);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [form, setForm] = useState({
@@ -72,6 +73,21 @@ export default function App() {
     }
   }
 
+  async function handleStockUpdate(product: ProductStock) {
+    setError("");
+    setSuccess("");
+    setUpdatingProductId(product.id);
+    try {
+      await inventoryApi.updateStock(product.id);
+      setSuccess(`${product.name}の現在庫（${numberFormat.format(product.currentStock)}）を基準在庫として更新しました。`);
+      await loadData();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "在庫の更新に失敗しました。");
+    } finally {
+      setUpdatingProductId(null);
+    }
+  }
+
   return (
     <div className="app-shell">
       <header className="topbar">
@@ -117,13 +133,14 @@ export default function App() {
             <label className="search"><span>⌕</span><input type="search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="商品コード・商品名で検索" /></label>
           </div>
           <div className="table-wrap"><table>
-            <thead><tr><th>商品コード</th><th>商品名</th><th>最終更新日</th><th className="numeric">基準在庫</th><th className="numeric inbound-text">入庫累計</th><th className="numeric outbound-text">出庫累計</th><th className="numeric current-heading">現在庫</th></tr></thead>
+            <thead><tr><th>商品コード</th><th>商品名</th><th>最終更新日</th><th className="numeric">基準在庫</th><th className="numeric inbound-text">入庫累計</th><th className="numeric outbound-text">出庫累計</th><th className="numeric current-heading">現在庫</th><th><span className="visually-hidden">操作</span></th></tr></thead>
             <tbody>
-              {!loading && products.length === 0 && <tr><td className="empty" colSpan={7}>該当する商品はありません。</td></tr>}
+              {!loading && products.length === 0 && <tr><td className="empty" colSpan={8}>該当する商品はありません。</td></tr>}
               {products.map((product) => <tr key={product.id}>
                 <td><span className="sku">{product.sku}</span></td><td className="product-name">{product.name}</td><td>{product.stockUpdatedAt.slice(0, 10)}</td>
                 <td className="numeric">{numberFormat.format(product.baseStockQuantity)}</td><td className="numeric inbound-text">+{numberFormat.format(product.inboundTotal)}</td><td className="numeric outbound-text">−{numberFormat.format(product.outboundTotal)}</td>
                 <td className="numeric"><strong className={product.currentStock <= 5 ? "stock-value low" : "stock-value"}>{numberFormat.format(product.currentStock)}</strong></td>
+                <td className="stock-action"><button type="button" className="stock-update-button" disabled={updatingProductId !== null} onClick={() => void handleStockUpdate(product)}>{updatingProductId === product.id ? "更新中…" : "在庫更新"}</button></td>
               </tr>)}
             </tbody>
           </table></div>

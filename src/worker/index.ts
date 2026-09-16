@@ -99,6 +99,42 @@ async function createTransaction(request: Request, env: Env): Promise<Response> 
   return Response.json({ transaction }, { status: 201 });
 }
 
+async function updateStockBaseline(productId: number, env: Env): Promise<Response> {
+  if (!Number.isInteger(productId) || productId < 1) {
+    return jsonError("正しい商品を指定してください。", 400);
+  }
+
+  const result = await env.DB.prepare(`
+    UPDATE products
+    SET base_stock_quantity = base_stock_quantity + COALESCE((
+          SELECT SUM(CASE
+            WHEN transaction_type = 'inbound' THEN quantity
+            WHEN transaction_type = 'outbound' THEN -quantity
+          END)
+          FROM inventory_transactions
+          WHERE product_id = products.id
+            AND datetime(transaction_date) > datetime(products.stock_updated_at)
+        ), 0),
+        stock_updated_at = MAX(
+          datetime('now'),
+          COALESCE((
+            SELECT MAX(datetime(transaction_date))
+            FROM inventory_transactions
+            WHERE product_id = products.id
+              AND datetime(transaction_date) > datetime(products.stock_updated_at)
+          ), datetime('now'))
+        ),
+        updated_at = datetime('now')
+    WHERE id = ?
+  `).bind(productId).run();
+
+  if (result.meta.changes === 0) return jsonError("指定された商品が見つかりません。", 404);
+
+  const product = await env.DB.prepare(`${stockSelect} WHERE p.id = ? GROUP BY p.id`)
+    .bind(productId).first();
+  return Response.json({ product });
+}
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
@@ -107,6 +143,10 @@ export default {
         return Response.json({ ok: true, system_id: "yamada-stock" });
       }
       if (url.pathname === "/api/products" && request.method === "GET") return listProducts(url, env);
+      const stockUpdateMatch = url.pathname.match(/^\/api\/products\/(\d+)\/stock-update$/);
+      if (stockUpdateMatch && request.method === "POST") {
+        return updateStockBaseline(Number(stockUpdateMatch[1]), env);
+      }
       if (url.pathname === "/api/transactions" && request.method === "GET") return listTransactions(url, env);
       if (url.pathname === "/api/transactions" && request.method === "POST") return createTransaction(request, env);
       if (url.pathname.startsWith("/api/")) return jsonError("APIが見つかりません。", 404);
