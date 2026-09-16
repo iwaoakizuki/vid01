@@ -1,0 +1,97 @@
+name: Bytai - Auto Merge Staging PR
+
+on:
+  pull_request_target:
+    branches:
+      - staging
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
+      - labeled
+
+concurrency:
+  group: bytai-staging-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    if: >
+      vars.BYTAI_AUTO_MERGE_STAGING == 'true' &&
+      github.event.pull_request.draft == false &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      (
+        contains(github.event.pull_request.labels.*.name, 'codex') ||
+        github.event.pull_request.head.ref == 'codex' ||
+        startsWith(github.event.pull_request.head.ref, 'codex/')
+      )
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout PR head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install dependencies
+        shell: bash
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci
+          else
+            npm install
+          fi
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Build
+        run: npm run build
+
+      - name: Test if available
+        shell: bash
+        run: |
+          if node -e "const p=require('./package.json'); process.exit(p.scripts && p.scripts.test ? 0 : 1)"; then
+            npm test
+          else
+            echo "No npm test script. Skipping tests."
+          fi
+
+  merge-and-dispatch:
+    needs:
+      - validate
+    if: >
+      needs.validate.result == 'success'
+    permissions:
+      actions: write
+      contents: write
+      pull-requests: write
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Merge PR into staging
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        shell: bash
+        run: |
+          gh pr merge "$PR_URL"             --repo "$GH_REPO"             --merge             --match-head-commit "$HEAD_SHA"
+
+      - name: Start staging deployment
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          gh workflow run bytai-staging.yml             --repo "$GH_REPO"             --ref staging
