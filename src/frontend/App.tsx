@@ -117,11 +117,11 @@ export default function App() {
             <label className="search"><span>⌕</span><input type="search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="商品コード・商品名で検索" /></label>
           </div>
           <div className="table-wrap"><table>
-            <thead><tr><th>商品コード</th><th>商品名</th><th>最終更新日</th><th className="numeric">基準在庫</th><th className="numeric inbound-text">入庫累計</th><th className="numeric outbound-text">出庫累計</th><th className="numeric current-heading">現在庫</th></tr></thead>
+            <thead><tr><th>商品コード</th><th>商品名</th><th>種類</th><th>最終更新日</th><th className="numeric">基準在庫</th><th className="numeric inbound-text">入庫累計</th><th className="numeric outbound-text">出庫累計</th><th className="numeric current-heading">現在庫</th></tr></thead>
             <tbody>
-              {!loading && products.length === 0 && <tr><td className="empty" colSpan={7}>該当する商品はありません。</td></tr>}
+              {!loading && products.length === 0 && <tr><td className="empty" colSpan={8}>該当する商品はありません。</td></tr>}
               {products.map((product) => <tr key={product.id}>
-                <td><span className="sku">{product.sku}</span></td><td className="product-name">{product.name}</td><td>{product.stockUpdatedAt.slice(0, 10)}</td>
+                <td><span className="sku">{product.sku}</span></td><td className="product-name">{product.name}</td><td>{product.productType}</td><td>{product.stockUpdatedAt.slice(0, 10)}</td>
                 <td className="numeric">{numberFormat.format(product.baseStockQuantity)}</td><td className="numeric inbound-text">+{numberFormat.format(product.inboundTotal)}</td><td className="numeric outbound-text">−{numberFormat.format(product.outboundTotal)}</td>
                 <td className="numeric"><strong className={product.currentStock <= 5 ? "stock-value low" : "stock-value"}>{numberFormat.format(product.currentStock)}</strong></td>
               </tr>)}

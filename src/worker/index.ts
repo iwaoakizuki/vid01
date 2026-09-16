@@ -12,7 +12,7 @@ interface TransactionInput {
 }
 
 const stockSelect = `
-  SELECT p.id, p.sku, p.name,
+  SELECT p.id, p.sku, p.name, p.product_type AS productType,
     p.base_stock_quantity AS baseStockQuantity,
     p.stock_updated_at AS stockUpdatedAt,
     COALESCE(SUM(CASE WHEN t.transaction_type = 'inbound' THEN t.quantity ELSE 0 END), 0) AS inboundTotal,

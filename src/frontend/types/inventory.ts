@@ -4,6 +4,7 @@ export interface ProductStock {
   id: number;
   sku: string;
   name: string;
+  productType: string;
   baseStockQuantity: number;
   stockUpdatedAt: string;
   inboundTotal: number;
@@ -22,4 +23,3 @@ export interface InventoryTransaction {
   note: string | null;
   createdAt: string;
 }
-
