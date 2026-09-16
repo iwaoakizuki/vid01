@@ -27,7 +27,8 @@ const stockSelect = `
 const historySelect = `
   SELECT t.id, t.product_id AS productId, p.sku, p.name AS productName,
     t.transaction_type AS transactionType, t.quantity,
-    t.transaction_date AS transactionDate, t.note, t.created_at AS createdAt
+    t.transaction_date AS transactionDate, t.note, t.created_at AS createdAt,
+    CASE WHEN datetime(t.transaction_date) <= datetime(p.stock_updated_at) THEN 1 ELSE 0 END AS isApplied
   FROM inventory_transactions t
   JOIN products p ON p.id = t.product_id`;
 
@@ -99,11 +100,7 @@ async function createTransaction(request: Request, env: Env): Promise<Response> 
   return Response.json({ transaction }, { status: 201 });
 }
 
-async function updateStockBaseline(productId: number, env: Env): Promise<Response> {
-  if (!Number.isInteger(productId) || productId < 1) {
-    return jsonError("正しい商品を指定してください。", 400);
-  }
-
+async function updateAllStockBaselines(env: Env): Promise<Response> {
   const result = await env.DB.prepare(`
     UPDATE products
     SET base_stock_quantity = base_stock_quantity + COALESCE((
@@ -125,14 +122,9 @@ async function updateStockBaseline(productId: number, env: Env): Promise<Respons
           ), datetime('now'))
         ),
         updated_at = datetime('now')
-    WHERE id = ?
-  `).bind(productId).run();
+  `).run();
 
-  if (result.meta.changes === 0) return jsonError("指定された商品が見つかりません。", 404);
-
-  const product = await env.DB.prepare(`${stockSelect} WHERE p.id = ? GROUP BY p.id`)
-    .bind(productId).first();
-  return Response.json({ product });
+  return Response.json({ updatedCount: result.meta.changes });
 }
 
 export default {
@@ -143,10 +135,7 @@ export default {
         return Response.json({ ok: true, system_id: "yamada-stock" });
       }
       if (url.pathname === "/api/products" && request.method === "GET") return listProducts(url, env);
-      const stockUpdateMatch = url.pathname.match(/^\/api\/products\/(\d+)\/stock-update$/);
-      if (stockUpdateMatch && request.method === "POST") {
-        return updateStockBaseline(Number(stockUpdateMatch[1]), env);
-      }
+      if (url.pathname === "/api/products/stock-update" && request.method === "POST") return updateAllStockBaselines(env);
       if (url.pathname === "/api/transactions" && request.method === "GET") return listTransactions(url, env);
       if (url.pathname === "/api/transactions" && request.method === "POST") return createTransaction(request, env);
       if (url.pathname.startsWith("/api/")) return jsonError("APIが見つかりません。", 404);

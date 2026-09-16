@@ -21,4 +21,5 @@ export interface InventoryTransaction {
   transactionDate: string;
   note: string | null;
   createdAt: string;
+  isApplied: boolean;
 }

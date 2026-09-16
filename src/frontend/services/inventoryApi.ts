@@ -18,8 +18,8 @@ export const inventoryApi = {
   getTransactions: () => request<{ transactions: InventoryTransaction[] }>(
     "/api/transactions?limit=20",
   ),
-  updateStock: (productId: number) => request<{ product: ProductStock }>(
-    `/api/products/${productId}/stock-update`,
+  updateStock: () => request<{ updatedCount: number }>(
+    "/api/products/stock-update",
     { method: "POST" },
   ),
   createTransaction: (data: {
