@@ -1,27 +1,30 @@
 {
-  "$schema":
-    "./node_modules/wrangler/config-schema.json",
-
-  "name":
-    "yamada-stock",
-
-  "main":
-    "src/worker/index.ts",
-
-  "compatibility_date":
-    "2026-09-16",
-
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "yamada-stock",
+  "main": "src/worker/index.ts",
+  "compatibility_date": "2026-09-16",
   "env": {
-
     "dev": {
-      "name":
-        "yamada-stock-dev"
+      "name": "yamada-stock-dev",
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "yamada-stock-dev-db",
+          "database_id": "089551ed-df21-4616-b2df-26692e86a518",
+          "migrations_dir": "migrations"
+        }
+      ]
     },
-
     "prod": {
-      "name":
-        "yamada-stock-prod"
+      "name": "yamada-stock-prod",
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "yamada-stock-prod-db",
+          "database_id": "c03d3197-493c-43ce-90f4-8b04a3215826",
+          "migrations_dir": "migrations"
+        }
+      ]
     }
-
   }
 }
