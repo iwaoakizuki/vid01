@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "customer_id": "yamada",
+  "app_id": "stock",
+  "system_id": "yamada-stock",
+  "display_name": "在庫管理システム",
+  "deployment": {
+    "dev": {
+      "mode": "automatic",
+      "target": "cloudflare"
+    },
+    "prod": {
+      "mode": "manual-promotion",
+      "target": "cloudflare",
+      "require_explicit_instruction": true
+    }
+  },
+  "resources": {
+    "github_repository": "yamada-stock",
+    "worker_dev": "yamada-stock-dev",
+    "worker_prod": "yamada-stock-prod",
+    "d1_dev": "yamada-stock-dev-db",
+    "d1_prod": "yamada-stock-prod-db",
+    "r2_dev": "yamada-stock-dev-files",
+    "r2_prod": "yamada-stock-prod-files"
+  }
+}
